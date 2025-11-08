@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Snowball Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f9;
+        }
+        .card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        /* Custom colors for visual emphasis */
+        .interest-red { color: #ef4444; }
+        .saving-green { color: #10b981; }
+        .principal-blue { color: #3b82f6; }
+        .amortization-table th {
+            background-color: #f3f4f6;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .amortization-table td {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-4xl bg-white p-6 md:p-10 rounded-xl card border border-gray-100">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-2">Debt Snowball Acceleration Calculator</h1>
+        <p class="text-gray-500 mb-8">See the power of adding an extra 'snowball' payment to your highest-interest debt.</p>
+
+        <!-- Input Fields Container -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+            <!-- Outstanding Balance Input -->
+            <div class="lg:col-span-2">
+                <label for="balance" class="block text-sm font-medium text-gray-700 mb-1">Outstanding Balance ($)</label>
+                <input type="number" id="balance" value="5000" min="0" step="100"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150"
+                       placeholder="e.g., 5000">
+            </div>
+
+            <!-- APR Input -->
+            <div>
+                <label for="apr" class="block text-sm font-medium text-gray-700 mb-1">Annual Rate (%)</label>
+                <input type="number" id="apr" value="29.0" min="0.01" step="0.1"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150"
+                       placeholder="e.g., 29.0">
+            </div>
+
+            <!-- Base Monthly Payment Input -->
+            <div>
+                <label for="base-payment" class="block text-sm font-medium text-gray-700 mb-1">Base Monthly Payment ($)</label>
+                <input type="number" id="base-payment" value="100" min="1" step="10"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150"
+                       placeholder="e.g., 100">
+            </div>
+            
+            <!-- Additional Monthly Payment (Snowball) Input -->
+            <div class="lg:col-span-2">
+                <label for="additional-payment" class="block text-sm font-medium text-red-700 mb-1 font-bold">Snowball Payment (Extra $)</label>
+                <input type="number" id="additional-payment" value="50" min="0" step="10"
+                       class="w-full px-4 py-2 border-2 border-red-400 bg-red-50 rounded-lg focus:ring-red-500 focus:border-red-500 transition duration-150"
+                       placeholder="e.g., 50">
+            </div>
+
+        </div>
+
+        <!-- Calculation Button -->
+        <button id="calculate-btn"
+                class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition duration-200 focus:outline-none focus:ring-4 focus:ring-red-300 transform hover:scale-[1.01]">
+            Calculate Snowball Impact & Schedule
+        </button>
+
+        <!-- Results Display Area -->
+        <div id="results" class="mt-8 pt-6 border-t border-gray-200 hidden">
+            
+            <!-- Monthly Breakdown Section -->
+            <div class="mb-6 p-5 border border-blue-200 bg-blue-50 rounded-lg">
+                <h3 class="text-xl font-bold text-blue-800 mb-3 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 principal-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2-3 .895-3 2 1.343 2 3 2m-3-4h6m-9 1l-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4l-2-2m-8-2v4"/>
+                    </svg>
+                    First Month's Payment Breakdown (Start of Snowball)
+                </h3>
+                <p class="text-sm text-gray-700 mb-3">
+                    Based on your starting balance and the total snowball payment of <span id="total-payment-amount" class="font-semibold principal-blue">$0.00</span>.
+                </p>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div class="text-lg">
+                        <span class="font-medium text-gray-700">Monthly Interest:</span>
+                        <span id="first-month-interest" class="font-bold interest-red ml-1">$0.00</span>
+                    </div>
+                    <div class="text-lg">
+                        <span class="font-medium text-gray-700">Principal Reduction:</span>
+                        <span id="principal-reduction" class="font-bold saving-green ml-1">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Payoff Comparison</h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                <!-- Total Interest Paid (Snowball) -->
+                <div class="bg-red-50 p-5 rounded-lg border-l-4 border-red-500">
+                    <p class="text-sm font-medium text-red-700 uppercase">Total Interest (Snowball)</p>
+                    <p id="snowball-interest" class="text-3xl font-extrabold interest-red mt-1">$0.00</p>
+                </div>
+
+                <!-- Payoff Time (Snowball) -->
+                <div class="bg-green-50 p-5 rounded-lg border-l-4 border-green-500">
+                    <p class="text-sm font-medium text-green-700 uppercase">Payoff Time (Snowball)</p>
+                    <p id="snowball-time" class="text-3xl font-extrabold text-green-600 mt-1">0 Months</p>
+                </div>
+
+                <!-- SAVINGS HIGHLIGHT -->
+                <div class="bg-blue-50 p-5 rounded-lg border-l-4 border-blue-500">
+                    <p class="text-sm font-medium text-blue-700 uppercase">Total Interest Saved!</p>
+                    <p id="interest-saved" class="text-3xl font-extrabold saving-green mt-1">$0.00</p>
+                </div>
+
+            </div>
+
+            <div class="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-sm text-yellow-800 hidden" id="error-message">
+                <p class="font-semibold">⚠️ Alert:</p>
+                <p id="error-text"></p>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-2">Scenario Comparison:</h3>
+            <p id="comparison-detail" class="text-gray-600 text-sm italic"></p>
+
+
+            <!-- GEMINI FEATURE 1: Motivation & Advice -->
+            <div class="mt-8 p-6 bg-purple-50 rounded-xl border-l-4 border-purple-500">
+                <h3 class="text-xl font-bold text-purple-800 mb-4">✨ Debt Snowball Coach</h3>
+                <p class="text-sm text-gray-600 mb-3">Get personalized motivation and financial strategy advice based on your payoff plan.</p>
+                <button id="generate-advice-btn" disabled class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-4 focus:ring-purple-300 transform hover:scale-[1.01] disabled:opacity-50">
+                    Generate Motivation & Advice
+                </button>
+                <div id="advice-output" class="mt-4 p-3 bg-purple-100 rounded-lg hidden text-sm text-gray-800">
+                    <p id="advice-text" class="whitespace-pre-wrap"></p>
+                </div>
+                <div id="advice-loading" class="mt-4 hidden text-center text-purple-600">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 inline-block mr-2"></div>
+                    Generating personalized advice...
+                </div>
+            </div>
+
+            <!-- GEMINI FEATURE 2: Q&A (Grounded Search) -->
+            <div class="mt-8 p-6 bg-yellow-50 rounded-xl border-l-4 border-yellow-500">
+                <h3 class="text-xl font-bold text-yellow-800 mb-4">✨ Financial Q&A (Powered by Google Search)</h3>
+                <p class="text-sm text-gray-600 mb-3">Ask any quick question about finance, debt, or credit terms (e.g., "What is amortization?").</p>
+                <div class="flex space-x-2">
+                    <input type="text" id="finance-query" placeholder="Ask a financial question..." class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
+                    <button id="ask-finance-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-4 focus:ring-yellow-300 disabled:opacity-50">Ask</button>
+                </div>
+                <div id="qa-output" class="mt-4 p-3 bg-yellow-100 rounded-lg hidden text-sm text-gray-800">
+                    <p id="qa-text" class="whitespace-pre-wrap"></p>
+                    <div id="qa-sources" class="mt-2 text-xs text-gray-500"></div>
+                </div>
+                <div id="qa-loading" class="mt-4 hidden text-center text-yellow-600">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600 inline-block mr-2"></div>
+                    Searching for answers...
+                </div>
+            </div>
+
+
+            <!-- Amortization Schedule Section -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Full Amortization Schedule
+                </h2>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-sm rounded-lg overflow-hidden border border-gray-200">
+                        <thead class="sticky top-0 bg-gray-50 shadow-sm">
+                            <tr class="amortization-table">
+                                <th>Month</th>
+                                <th>Starting Balance</th>
+                                <th>Interest Paid</th>
+                                <th>Principal Paid</th>
+                                <th>Ending Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="amortization-schedule">
+                            <!-- Rows will be injected here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Gemini API Setup ---
+        const apiKey = "";
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        // Global scope variables to store calculated results for the Gemini Coach
+        let lastSnowballMonths = 0;
+        let lastSnowballInterest = 0;
+        let lastBalance = 0;
+        let lastAPR = 0;
+        let lastSnowballPayment = 0;
+
+
+        /**
+         * Utility function for fetch with exponential backoff.
+         */
+        async function fetchWithExponentialBackoff(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        if (response.status === 429 && i < maxRetries - 1) {
+                            const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    // Continue loop for retry
+                }
+            }
+        }
+
+        // Global utility function to format currency
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        };
+
+        // Core calculation function - calculates payoff for a given balance and fixed payment
+        // Returns an array of monthly payment objects for the amortization table
+        function calculatePayoffWithSchedule(balance, annualRate, payment) {
+            let currentBalance = balance;
+            let totalInterest = 0;
+            let months = 0;
+            const maxMonths = 3600; // Safety limit
+            const monthlyRate = annualRate / 12;
+            const schedule = [];
+
+            // Check if payment covers the first month's interest
+            const firstMonthInterest = balance * monthlyRate;
+            if (payment <= firstMonthInterest) {
+                return { isPossible: false, firstMonthInterest };
+            }
+
+            while (currentBalance > 0 && months < maxMonths) {
+                months++;
+                
+                const startingBalance = currentBalance;
+                const interestCharge = startingBalance * monthlyRate;
+                
+                let principalPaid = payment - interestCharge;
+
+                // Adjust for final payment (if principalPaid is greater than the remaining balance)
+                if (currentBalance - principalPaid < 0) {
+                    principalPaid = currentBalance;
+                    const finalPayment = interestCharge + principalPaid; // Actual final payment amount
+                    currentBalance = 0;
+                } else {
+                    currentBalance -= principalPaid;
+                }
+                
+                totalInterest += interestCharge;
+
+                schedule.push({
+                    month: months,
+                    startingBalance: startingBalance,
+                    interestPaid: interestCharge,
+                    principalPaid: principalPaid,
+                    endingBalance: currentBalance
+                });
+
+                if (currentBalance <= 0) break;
+            }
+
+            if (months >= maxMonths && currentBalance > 0) {
+                 return { isPossible: false };
+            }
+
+            return { isPossible: true, months, totalInterest, schedule };
+        }
+
+        // Function to render the amortization schedule table
+        function renderAmortizationSchedule(schedule) {
+            const tbody = document.getElementById('amortization-schedule');
+            tbody.innerHTML = ''; 
+
+            schedule.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.month}</td>
+                    <td>${formatCurrency(row.startingBalance)}</td>
+                    <td class="interest-red">${formatCurrency(row.interestPaid)}</td>
+                    <td class="saving-green">${formatCurrency(row.principalPaid)}</td>
+                    <td class="${row.endingBalance > 0 ? 'font-medium' : 'font-bold text-green-600'}">${formatCurrency(row.endingBalance)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Main function to run the calculation and comparison
+        function calculateSnowballImpact() {
+            // Get input values
+            const balanceInput = document.getElementById('balance');
+            const aprInput = document.getElementById('apr');
+            const basePaymentInput = document.getElementById('base-payment');
+            const additionalPaymentInput = document.getElementById('additional-payment');
+
+            const balance = parseFloat(balanceInput.value);
+            const annualRate = parseFloat(aprInput.value) / 100;
+            const basePayment = parseFloat(basePaymentInput.value);
+            const additionalPayment = parseFloat(additionalPaymentInput.value);
+            const totalSnowballPayment = basePayment + additionalPayment;
+
+            // Output elements
+            const resultsDiv = document.getElementById('results');
+            const snowballInterestEl = document.getElementById('snowball-interest');
+            const snowballTimeEl = document.getElementById('snowball-time');
+            const interestSavedEl = document.getElementById('interest-saved');
+            const comparisonDetailEl = document.getElementById('comparison-detail');
+            const errorMsgDiv = document.getElementById('error-message');
+            const errorTextEl = document.getElementById('error-text');
+            const generateAdviceBtn = document.getElementById('generate-advice-btn');
+
+            // New elements for monthly breakdown
+            const totalPaymentAmountEl = document.getElementById('total-payment-amount');
+            const firstMonthInterestEl = document.getElementById('first-month-interest');
+            const principalReductionEl = document.getElementById('principal-reduction');
+            const amortizationTableBody = document.getElementById('amortization-schedule');
+
+            // Disable Gemini button initially
+            generateAdviceBtn.disabled = true;
+            amortizationTableBody.innerHTML = '';
+            document.getElementById('advice-output').classList.add('hidden');
+            document.getElementById('qa-output').classList.add('hidden');
+
+
+            // --- Input Validation ---
+            if (isNaN(balance) || isNaN(annualRate) || isNaN(basePayment) || isNaN(additionalPayment) || 
+                balance <= 0 || annualRate <= 0 || basePayment < 0 || additionalPayment < 0 || totalSnowballPayment <= 0) {
+                errorTextEl.textContent = "Please ensure Balance, APR are positive, and the total payment (Base + Snowball) is greater than zero.";
+                errorMsgDiv.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            // --- 1. Calculate Monthly Interest Breakdown for First Month (Snowball Plan) ---
+            const monthlyRate = annualRate / 12;
+            const firstMonthInterest = balance * monthlyRate;
+            const principalReduction = totalSnowballPayment - firstMonthInterest;
+
+            // --- Validation check based on first month interest ---
+            if (totalSnowballPayment <= firstMonthInterest) {
+                errorTextEl.textContent = `The total payment (${formatCurrency(totalSnowballPayment)}) is less than the first month's interest (${formatCurrency(firstMonthInterest)}). The debt will never be paid off. Increase your payment!`;
+                errorMsgDiv.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            // Update Monthly Breakdown UI
+            totalPaymentAmountEl.textContent = formatCurrency(totalSnowballPayment);
+            firstMonthInterestEl.textContent = formatCurrency(firstMonthInterest);
+            principalReductionEl.textContent = formatCurrency(principalReduction);
+
+
+            // --- 2. Calculate Scenario with Snowball Payment (Total Payment) ---
+            const snowballResults = calculatePayoffWithSchedule(balance, annualRate, totalSnowballPayment);
+            
+            if (!snowballResults.isPossible) {
+                errorTextEl.textContent = "Calculation error: The payment is insufficient to pay off the debt, despite covering the first month's interest.";
+                errorMsgDiv.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            // --- 3. Calculate Scenario WITHOUT Snowball Payment (Base Payment only) ---
+            const baseResults = calculatePayoffWithSchedule(balance, annualRate, basePayment);
+
+            // --- Determine Savings and Display Results ---
+            resultsDiv.classList.remove('hidden');
+            errorMsgDiv.classList.add('hidden');
+
+            // Store results globally for Gemini Coach
+            lastSnowballMonths = snowballResults.months;
+            lastSnowballInterest = snowballResults.totalInterest;
+            lastBalance = balance;
+            lastAPR = parseFloat(aprInput.value); 
+            lastSnowballPayment = totalSnowballPayment;
+
+            // Payoff Time Formatting Helper
+            const formatTime = (totalMonths) => {
+                const years = Math.floor(totalMonths / 12);
+                const months = totalMonths % 12;
+                if (years === 0) return `${months} month${months !== 1 ? 's' : ''}`;
+                return `${years} year${years !== 1 ? 's' : ''} and ${months} month${months !== 1 ? 's' : ''}`;
+            };
+
+            // Get base scenario numbers for comparison
+            const baseInterest = baseResults.isPossible ? baseResults.totalInterest : NaN;
+            const baseMonths = baseResults.isPossible ? baseResults.months : NaN;
+
+            // Get snowball scenario numbers
+            const snowballInterest = snowballResults.totalInterest;
+            const snowballMonths = snowballResults.months;
+
+            // Calculate savings
+            const interestSaved = baseResults.isPossible ? baseInterest - snowballInterest : NaN;
+            const monthsSaved = baseResults.isPossible ? baseMonths - snowballMonths : NaN;
+            
+            // Update UI elements
+            snowballInterestEl.textContent = formatCurrency(snowballInterest);
+            snowballTimeEl.textContent = formatTime(snowballMonths);
+            
+            // Render the Amortization Schedule
+            renderAmortizationSchedule(snowballResults.schedule);
+
+            // Handle display if base payment alone is impossible
+            if (!baseResults.isPossible) {
+                interestSavedEl.textContent = "INFINITE";
+                comparisonDetailEl.innerHTML = `<span class="font-bold text-red-600">The base payment of ${formatCurrency(basePayment)} is not enough to pay off the debt.</span> Your total payment of ${formatCurrency(totalSnowballPayment)} is essential!`;
+            } else {
+                interestSavedEl.textContent = formatCurrency(interestSaved);
+
+                // Detailed Comparison
+                comparisonDetailEl.innerHTML = `
+                    By adding a **${formatCurrency(additionalPayment)}** snowball payment, you accelerate your payoff time from 
+                    <span class="font-semibold">${formatTime(baseMonths)}</span> down to 
+                    <span class="font-semibold text-green-600">${formatTime(snowballMonths)}</span>.
+                    <br>
+                    This results in saving **${formatCurrency(interestSaved)}** in total interest charges and cutting the debt by 
+                    <span class="font-semibold text-green-600">${monthsSaved} month${monthsSaved !== 1 ? 's' : ''}</span>.
+                `;
+            }
+
+            // Enable Gemini Coach button
+            generateAdviceBtn.disabled = false;
+        }
+
+        // --- GEMINI API Feature 1: Debt Coach (Motivation & Strategy) ---
+        async function generateMotivation() {
+            const btn = document.getElementById('generate-advice-btn');
+            const outputDiv = document.getElementById('advice-output');
+            const outputText = document.getElementById('advice-text');
+            const loadingDiv = document.getElementById('advice-loading');
+
+            btn.disabled = true;
+            outputDiv.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+            outputText.textContent = "";
+
+            const years = Math.floor(lastSnowballMonths / 12);
+            const months = lastSnowballMonths % 12;
+            const timeString = `${years} years and ${months} months`;
+
+            const systemPrompt = "You are an encouraging and positive financial coach specializing in debt payoff. Analyze the user's debt situation and provide a single paragraph of highly motivating encouragement and one concrete, actionable financial tip related to their plan. Keep the tone inspiring and concise.";
+            
+            const userQuery = `The user is starting a debt snowball with a total payment of $${lastSnowballPayment.toFixed(2)}. Their initial balance is $${lastBalance.toFixed(2)} at ${lastAPR}% APR. The calculator projects a payoff time of ${timeString} and total interest paid of $${lastSnowballInterest.toFixed(2)}. Give them a motivational message and one actionable next step.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            try {
+                const response = await fetchWithExponentialBackoff(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const text = response?.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate advice right now.";
+                outputText.textContent = text;
+                outputDiv.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                outputText.textContent = "Error generating advice. Please try again later.";
+                outputDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                loadingDiv.classList.add('hidden');
+            }
+        }
+
+
+        // --- GEMINI API Feature 2: Financial Q&A (Grounded Search) ---
+        async function askFinanceQuestion() {
+            const queryInput = document.getElementById('finance-query');
+            const btn = document.getElementById('ask-finance-btn');
+            const outputDiv = document.getElementById('qa-output');
+            const outputText = document.getElementById('qa-text');
+            const loadingDiv = document.getElementById('qa-loading');
+            const sourcesDiv = document.getElementById('qa-sources');
+
+            const userQuery = queryInput.value.trim();
+            if (!userQuery) return;
+
+            btn.disabled = true;
+            outputDiv.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+            outputText.textContent = "";
+            sourcesDiv.innerHTML = "";
+
+            const systemPrompt = "You are a concise financial terminology expert. Answer the user's question clearly and accurately in one or two sentences. If the question is about a specific financial term, define it. Do not include introductory phrases like 'The answer is' or 'Here is the definition'.";
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            try {
+                const response = await fetchWithExponentialBackoff(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const candidate = response.candidates?.[0];
+                const text = candidate?.content?.parts?.[0]?.text || "Sorry, I couldn't find an answer right now.";
+                outputText.textContent = text;
+                
+                // Extract and display sources
+                let sources = [];
+                const groundingMetadata = candidate?.groundingMetadata;
+                if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                    sources = groundingMetadata.groundingAttributions
+                        .map(attribution => ({
+                            uri: attribution.web?.uri,
+                            title: attribution.web?.title,
+                        }))
+                        .filter(source => source.uri && source.title);
+                }
+
+                if (sources.length > 0) {
+                    sourcesDiv.innerHTML = 'Source(s): ' + sources.map((s, i) => 
+                        `<a href="${s.uri}" target="_blank" class="text-blue-500 hover:underline">${s.title}</a>`
+                    ).join(', ');
+                }
+
+                outputDiv.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                outputText.textContent = "Error finding an answer. Check your query and try again.";
+                outputDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                loadingDiv.classList.add('hidden');
+            }
+        }
+
+        // --- Event Listeners and Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const calculateBtn = document.getElementById('calculate-btn');
+            const generateAdviceBtn = document.getElementById('generate-advice-btn');
+            const askFinanceBtn = document.getElementById('ask-finance-btn');
+            const financeQueryInput = document.getElementById('finance-query');
+
+            // Attach calculation function to button click
+            calculateBtn.addEventListener('click', calculateSnowballImpact);
+
+            // Attach Gemini functions
+            generateAdviceBtn.addEventListener('click', generateMotivation);
+            askFinanceBtn.addEventListener('click', askFinanceQuestion);
+            financeQueryInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    askFinanceQuestion();
+                }
+            });
+
+            // Also calculate on pressing 'Enter' in main input fields
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        calculateSnowballImpact();
+                    }
+                });
+            });
+
+            // Run initial calculation with default values
+            calculateSnowballImpact();
+        });
+
+    </script>
+</body>
+</html>
